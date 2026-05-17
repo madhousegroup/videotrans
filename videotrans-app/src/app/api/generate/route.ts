@@ -210,13 +210,24 @@ async function checkMagnificStatus(taskId: string, apiKey: string, model: string
   const status = (taskData.status || '').toLowerCase()
 
   if (status === 'completed' || status === 'succeeded' || status === 'done') {
-    // Extract video URL from generated array
-    const videoUrl = taskData.generated?.[0]?.url ||
-      taskData.video_url ||
-      taskData.result?.video_url ||
-      taskData.output?.video_url ||
-      taskData.video?.url ||
-      (taskData.videos && taskData.videos[0]?.url)
+    // Extract video URL - generated is an array of strings (URLs)
+    let videoUrl: string | undefined
+
+    if (taskData.generated && taskData.generated.length > 0) {
+      // generated can be array of strings or array of objects
+      const first = taskData.generated[0]
+      videoUrl = typeof first === 'string' ? first : first?.url
+    }
+
+    if (!videoUrl) {
+      videoUrl = taskData.video_url ||
+        taskData.result?.video_url ||
+        taskData.output?.video_url ||
+        taskData.video?.url ||
+        (taskData.videos && taskData.videos[0]?.url)
+    }
+
+    console.log('[Magnific] Completed! Video URL:', videoUrl)
 
     return NextResponse.json({
       status: 'completed',
