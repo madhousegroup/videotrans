@@ -44,26 +44,22 @@ export default function Home() {
   }
 
   const uploadFile = async (file: File, type: 'image' | 'video') => {
-    const settings = getSettings()
-    const cloudName = settings?.cloudinaryCloudName || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
-    const preset = settings?.cloudinaryUploadPreset || process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
-
-    if (!cloudName || !preset) {
-      throw new Error('Cloudinary not configured. Please set up in Settings.')
-    }
-
     const formData = new FormData()
     formData.append('file', file)
-    formData.append('upload_preset', preset)
+    formData.append('type', type)
 
-    const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${cloudName}/${type}/upload`,
-      { method: 'POST', body: formData }
-    )
+    const response = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+    })
 
-    if (!response.ok) throw new Error(`Upload failed: ${response.statusText}`)
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}))
+      throw new Error(err.error || `Upload failed: ${response.statusText}`)
+    }
+
     const data = await response.json()
-    return data.secure_url
+    return data.url
   }
 
   const handleGenerate = useCallback(async () => {

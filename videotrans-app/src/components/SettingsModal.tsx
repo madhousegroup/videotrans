@@ -10,8 +10,6 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   const [settings, setSettings] = useState({
     apiProvider: 'magnific',
     apiKey: '',
-    cloudinaryCloudName: '',
-    cloudinaryUploadPreset: '',
   })
 
   useEffect(() => {
@@ -95,33 +93,6 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
             >
               Get your API key here
             </a>
-          </div>
-
-          {/* Cloudinary Cloud Name */}
-          <div>
-            <label className="text-sm text-gray-300 block mb-1">Cloudinary Cloud Name</label>
-            <input
-              type="text"
-              value={settings.cloudinaryCloudName}
-              onChange={e => setSettings({ ...settings, cloudinaryCloudName: e.target.value })}
-              className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-white"
-              placeholder="e.g. dskzscgo0"
-            />
-          </div>
-
-          {/* Cloudinary Upload Preset */}
-          <div>
-            <label className="text-sm text-gray-300 block mb-1">Cloudinary Upload Preset</label>
-            <input
-              type="text"
-              value={settings.cloudinaryUploadPreset}
-              onChange={e => setSettings({ ...settings, cloudinaryUploadPreset: e.target.value })}
-              className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-white"
-              placeholder="e.g. kd_motion_upload"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Create an unsigned upload preset in your Cloudinary dashboard.
-            </p>
           </div>
         </div>
 
