@@ -9,7 +9,7 @@ import VideoModal from '@/components/VideoModal'
 import { HistoryItem } from '@/lib/types'
 
 export default function Home() {
-  // Control panel state
+  // Control panel state - default to Kling 2.6 Standard
   const [model, setModel] = useState('kling-2.6-standard')
   const [orientation, setOrientation] = useState('match-video')
   const [cfgScale, setCfgScale] = useState(0.5)
@@ -110,7 +110,7 @@ export default function Home() {
           cfgScale,
           motionPrompt,
           apiKey: settings.apiKey,
-          apiProvider: settings.apiProvider || 'fal',
+          apiProvider: settings.apiProvider || 'magnific',
         }),
       })
 
@@ -126,15 +126,16 @@ export default function Home() {
       let finalResult = result
 
       if (result.status !== 'completed') {
-        // Poll
+        // Poll - pass model for Magnific endpoint resolution
+        const provider = settings.apiProvider || 'magnific'
         for (let i = 0; i < 120; i++) {
           await new Promise(r => setTimeout(r, 5000))
-          const checkRes = await fetch(`/api/generate?taskId=${result.taskId}&apiKey=${settings.apiKey}&apiProvider=${settings.apiProvider || 'fal'}`)
+          const checkRes = await fetch(`/api/generate?taskId=${result.taskId}&apiKey=${settings.apiKey}&apiProvider=${provider}&model=${model}`)
           if (!checkRes.ok) continue
           finalResult = await checkRes.json()
           
           if (finalResult.status === 'completed') break
-          if (finalResult.status === 'failed') throw new Error('Generation failed')
+          if (finalResult.status === 'failed') throw new Error(finalResult.error || 'Generation failed')
           
           setGenerationStatus(`Processing... (${Math.min(Math.round((i / 120) * 100), 99)}%)`)
         }
