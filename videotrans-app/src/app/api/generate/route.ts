@@ -158,8 +158,13 @@ async function handleMagnific(
   const data = await response.json()
   console.log('[Magnific] Response:', JSON.stringify(data, null, 2))
 
-  // Magnific returns a task object with an id
-  const taskId = data.data?.id || data.id || data.task_id
+  // Magnific returns: { data: { task_id: "...", status: "CREATED", generated: [] } }
+  const taskId = data.data?.task_id || data.data?.id || data.task_id || data.id
+
+  if (!taskId) {
+    console.error('[Magnific] No task_id in response:', data)
+    throw new Error('No task_id returned from Magnific API')
+  }
 
   return NextResponse.json({
     taskId,
@@ -169,10 +174,23 @@ async function handleMagnific(
 }
 
 async function checkMagnificStatus(taskId: string, apiKey: string, model: string) {
-  // Magnific uses GET to the same endpoint with task ID
-  const endpoint = getMagnificEndpoint(model, 'tasks')
+  // Magnific uses different GET endpoints for status check:
+  // - Kling 2.6: GET /v1/ai/image-to-video/kling-v2-6/{task-id}
+  // - Kling 3.0 Pro: GET /v1/ai/video/kling-v3-motion-control-pro/{task-id}
+  // - Kling 3.0 Std: GET /v1/ai/video/kling-v3-motion-control-std/{task-id}
+  const baseUrl = 'https://api.freepik.com/v1/ai'
 
-  const response = await fetch(`${endpoint}/${taskId}`, {
+  const statusEndpointMap: Record<string, string> = {
+    'kling-3.0-pro': `${baseUrl}/video/kling-v3-motion-control-pro/${taskId}`,
+    'kling-3.0-standard': `${baseUrl}/video/kling-v3-motion-control-std/${taskId}`,
+    'kling-2.6-pro': `${baseUrl}/image-to-video/kling-v2-6/${taskId}`,
+    'kling-2.6-standard': `${baseUrl}/image-to-video/kling-v2-6/${taskId}`,
+  }
+
+  const statusUrl = statusEndpointMap[model] || statusEndpointMap['kling-2.6-standard']
+  console.log('[Magnific] Checking status at:', statusUrl)
+
+  const response = await fetch(statusUrl, {
     headers: {
       'x-freepik-api-key': apiKey,
     },
@@ -185,15 +203,16 @@ async function checkMagnificStatus(taskId: string, apiKey: string, model: string
   }
 
   const data = await response.json()
-  console.log('[Magnific] Status:', JSON.stringify(data, null, 2))
+  console.log('[Magnific] Status response:', JSON.stringify(data, null, 2))
 
-  // Magnific task status mapping
+  // Magnific response: { data: { task_id, status, generated: [{ url }] } }
   const taskData = data.data || data
-  const status = taskData.status?.toLowerCase()
+  const status = (taskData.status || '').toLowerCase()
 
   if (status === 'completed' || status === 'succeeded' || status === 'done') {
-    // Extract video URL - Magnific returns it in various places
-    const videoUrl = taskData.video_url ||
+    // Extract video URL from generated array
+    const videoUrl = taskData.generated?.[0]?.url ||
+      taskData.video_url ||
       taskData.result?.video_url ||
       taskData.output?.video_url ||
       taskData.video?.url ||
@@ -212,6 +231,7 @@ async function checkMagnificStatus(taskId: string, apiKey: string, model: string
     })
   }
 
+  // Still processing (CREATED, PROCESSING, PENDING, etc.)
   return NextResponse.json({
     status: 'processing',
     progress: taskData.progress,
