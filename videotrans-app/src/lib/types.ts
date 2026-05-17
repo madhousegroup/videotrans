@@ -8,7 +8,7 @@ export interface HistoryItem {
 }
 
 export interface AppSettings {
-  apiProvider: 'fal' | 'kling-direct' | 'custom'
+  apiProvider: 'magnific' | 'fal' | 'kling-direct'
   apiKey: string
   cloudinaryCloudName: string
   cloudinaryUploadPreset: string
